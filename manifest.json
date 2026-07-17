@@ -1,0 +1,18 @@
+{
+  "name": "DTA Chanclas - Catálogo Digital",
+  "short_name": "DTA Chanclas",
+  "description": "Catálogo mayorista y al detal de chanclas. Vende, Emprende y Crece.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0B1F4D",
+  "theme_color": "#0B1F4D",
+  "icons": [
+    {
+      "src": "assets/logo/dta-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
