@@ -138,7 +138,7 @@ function openCarousel(catId){
 
 function renderCarouselImg(){
   const archivo = catActual.productos[indiceActual];
-  carouselImgWrap.innerHTML = `<img src="${imgPath(catActual.id, archivo)}" alt="${catActual.nombre}" onerror="${imgOnError()}">`;
+  carouselImgWrap.innerHTML = `<img src="${imgPath(catActual.id, archivo)}" alt="${catActual.nombre}" loading="lazy" decoding="async" onerror="${imgOnError()}">`;
   carouselDotsModal.querySelectorAll("span").forEach((d, i) => d.classList.toggle("active", i === indiceActual));
   carouselWhatsapp.href = waLinkProducto(catActual.nombre, archivo);
 }

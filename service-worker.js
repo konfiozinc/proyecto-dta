@@ -1,18 +1,59 @@
-/* Este service worker reemplaza al anterior y se autodestruye.
-   Objetivo: en cualquier navegador que ya tenga instalado el
-   service worker viejo (el que causaba que no se vieran los
-   cambios), este se instala, borra todo el caché guardado,
-   se desregistra a sí mismo y obliga a recargar la página
-   con la versión real publicada en GitHub. */
+/* Service worker — DTA Chanclas (catálogo) */
+const CACHE_NAME = 'dta-catalogo-v1';
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './css/styles.css',
+  './js/app.js',
+  './manifest.json',
+  './assets/logo/dta-logo.png'
+];
 
-self.addEventListener("install", () => {
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .catch(() => {})
+      .then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener("activate", async () => {
-  const keys = await caches.keys();
-  await Promise.all(keys.map((key) => caches.delete(key)));
-  await self.registration.unregister();
-  const clientsList = await self.clients.matchAll({ type: "window" });
-  clientsList.forEach((client) => client.navigate(client.url));
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  const esLocal = url.origin === self.location.origin;
+
+  if (esLocal && url.pathname.includes('/assets/')) {
+    // Imágenes y assets: caché primero (se cachean bajo demanda al verse)
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((resp) => {
+          const copia = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copia));
+          return resp;
+        }).catch(() => cached);
+      })
+    );
+  } else {
+    // Navegación y shell: red primero, respaldo de caché
+    event.respondWith(
+      fetch(request).then((resp) => {
+        if (esLocal) {
+          const copia = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copia));
+        }
+        return resp;
+      }).catch(() => caches.match(request))
+    );
+  }
 });

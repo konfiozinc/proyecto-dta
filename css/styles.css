@@ -263,3 +263,6 @@ footer{
   background:var(--navy); color:#D9E0F2; text-align:center; padding:30px 20px 24px; font-size:.85rem; margin-top:40px;
 }
 footer .footer-legal{font-size:.72rem;color:#8FA0C9;margin-top:6px;}
+
+/* guardas responsive (fusionadas desde styles.css raíz) */
+html,body{overflow-x:hidden}img,svg,video{max-width:100%;height:auto}table{max-width:100%}
