@@ -1,53 +1,33 @@
 /* ===========================================================
-   CONFIGURACIÓN GENERAL
+   DTA Chanclas — Catálogo
+   Los productos se cargan desde: content/catalogo.json
+   (editable desde el panel CMS). Si el JSON no está disponible
+   (p. ej. file://), se usan los datos por defecto de abajo.
    =========================================================== */
 const WHATSAPP_NUM = "573175821372";
 const ASESOR_NOMBRE = "Jaqueline";
 const SITIO_NOMBRE = "DTA Chanclas";
 
-/* ===========================================================
-   FUENTE DE DATOS — agrega o edita productos aquí.
-   Sube tus fotos a: assets/catalogo_dta/<categoria>/<archivo>
-   Cada categoría admite hasta 10 fotos (productos1.jpg ... productos10.jpg).
-   =========================================================== */
-function generarNombres(prefijo, cantidad){
-  return Array.from({length: cantidad}, (_, i) => `${prefijo}${i + 1}.jpg`);
-}
+const CATALOGO_DEFAULT = {
+  categorias: [
+    { id:"dama-planas", nombre:"Dama Planas", tallas:"Dama 35 a 41", precioDetal:33000, precioMayor:24000, descripcion:"Chanclas planas para dama, cómodas y elegantes.", fotos:["planas1.jpg","planas2.jpg","planas3.jpg","planas4.jpg","planas5.jpg","planas6.jpg","planas7.jpg","planas8.jpg"] },
+    { id:"dama-altas", nombre:"Dama Altas", tallas:"Dama 35 a 41", precioDetal:40000, precioMayor:30000, descripcion:"Chanclas altas (plataforma) para dama.", fotos:["altas1.jpg","altas2.jpg","altas3.jpg","altas4.jpg","altas5.jpg"] },
+    { id:"altas-cruzadas", nombre:"Altas Cruzadas", tallas:"Dama 35 a 41", precioDetal:40000, precioMayor:32000, descripcion:"Chanclas altas cruzadas para dama.", fotos:["cruzadas1.jpg","cruzadas2.jpg","cruzadas3.jpg"] },
+    { id:"caballero", nombre:"Caballero", tallas:"Caballero 37 a 44", precioDetal:40000, precioMayor:30000, descripcion:"Chanclas para caballero, resistentes.", fotos:["caballero1.jpg","caballero2.jpg","caballero3.jpg","caballero4.jpg","caballero5.jpg"] }
+  ]
+};
 
-const categorias = [
-  {
-    id: "dama-planas",
-    nombre: "Dama Planas",
-    tallas: "Dama 35 a 41",
-    precioDetal: 33000,
-    precioMayor: 24000,
-    productos: generarNombres("planas", 10)
-  },
-  {
-    id: "dama-altas",
-    nombre: "Dama Altas",
-    tallas: "Dama 35 a 41",
-    precioDetal: 40000,
-    precioMayor: 30000,
-    productos: generarNombres("altas", 10)
-  },
-  {
-    id: "altas-cruzadas",
-    nombre: "Altas Cruzadas",
-    tallas: "Dama 35 a 41",
-    precioDetal: 40000,
-    precioMayor: 32000,
-    productos: generarNombres("cruzadas", 10)
-  },
-  {
-    id: "caballero",
-    nombre: "Caballero",
-    tallas: "Caballero 37 a 44",
-    precioDetal: 40000,
-    precioMayor: 30000,
-    productos: generarNombres("caballero", 10)
-  }
-];
+let categorias = CATALOGO_DEFAULT.categorias;
+
+async function cargarProductos(){
+  try {
+    const r = await fetch("content/catalogo.json", { cache: "no-store" });
+    if (r.ok) {
+      const d = await r.json();
+      if (d && Array.isArray(d.categorias) && d.categorias.length) categorias = d.categorias;
+    }
+  } catch (e) { /* usar datos por defecto */ }
+}
 
 const fmt = n => "$" + n.toLocaleString("es-CO");
 
@@ -83,8 +63,8 @@ function buildCategorias(){
   categoriasGrid.innerHTML = categorias.map(cat => `
     <div class="categoria-card" data-cat="${cat.id}">
       <div class="img-wrap">
-        <img src="${imgPath(cat.id, cat.productos[0])}" alt="${cat.nombre}" loading="lazy" onerror="${imgOnError()}">
-        <span class="badge-count">${cat.productos.length} fotos</span>
+        <img src="${imgPath(cat.id, cat.fotos[0])}" alt="${cat.nombre}" loading="lazy" decoding="async" onerror="${imgOnError()}">
+        <span class="badge-count">${cat.fotos.length} fotos</span>
       </div>
       <div class="info">
         <h3>${cat.nombre}</h3>
@@ -127,8 +107,8 @@ function openCarousel(catId){
   catActual = categorias.find(c => c.id === catId);
   indiceActual = 0;
   carouselTitle.textContent = catActual.nombre;
-  carouselPrecios.textContent = `Tallas ${catActual.tallas} · Detal ${fmt(catActual.precioDetal)} · Mayor ${fmt(catActual.precioMayor)}`;
-  carouselDotsModal.innerHTML = catActual.productos.map((_, i) => `<span data-i="${i}"></span>`).join("");
+  carouselPrecios.textContent = `Tallas ${catActual.tallas} · Detal ${fmt(catActual.precioDetal)} · Mayor ${fmt(catActual.precioMayor)}${catActual.descripcion ? ' · ' + catActual.descripcion : ''}`;
+  carouselDotsModal.innerHTML = catActual.fotos.map((_, i) => `<span data-i="${i}"></span>`).join("");
   carouselDotsModal.querySelectorAll("span").forEach(dot => {
     dot.addEventListener("click", () => { indiceActual = Number(dot.dataset.i); renderCarouselImg(); });
   });
@@ -137,18 +117,18 @@ function openCarousel(catId){
 }
 
 function renderCarouselImg(){
-  const archivo = catActual.productos[indiceActual];
+  const archivo = catActual.fotos[indiceActual];
   carouselImgWrap.innerHTML = `<img src="${imgPath(catActual.id, archivo)}" alt="${catActual.nombre}" loading="lazy" decoding="async" onerror="${imgOnError()}">`;
   carouselDotsModal.querySelectorAll("span").forEach((d, i) => d.classList.toggle("active", i === indiceActual));
   carouselWhatsapp.href = waLinkProducto(catActual.nombre, archivo);
 }
 
 carouselPrev.addEventListener("click", () => {
-  indiceActual = (indiceActual - 1 + catActual.productos.length) % catActual.productos.length;
+  indiceActual = (indiceActual - 1 + catActual.fotos.length) % catActual.fotos.length;
   renderCarouselImg();
 });
 carouselNext.addEventListener("click", () => {
-  indiceActual = (indiceActual + 1) % catActual.productos.length;
+  indiceActual = (indiceActual + 1) % catActual.fotos.length;
   renderCarouselImg();
 });
 
@@ -236,5 +216,8 @@ if("serviceWorker" in navigator){
 }
 
 /* ---------- Init ---------- */
-buildCategorias();
-buildPrecios();
+(async function init(){
+  await cargarProductos();
+  buildCategorias();
+  buildPrecios();
+})();

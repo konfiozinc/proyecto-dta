@@ -1,0 +1,35 @@
+# Configuración de Decap CMS para DTA Chanclas
+# Backend GitHub: requiere una OAuth App de GitHub + un proveedor OAuth alojado.
+# Pega la URL de tu proveedor en base_url (ver README, sección "Panel CMS").
+backend:
+  name: github
+  repo: konfiozinc/proyecto-dta
+  branch: main
+  base_url: https://TU-PROVEEDOR-OAUTH.netlify.app
+
+media_folder: "assets/catalogo_dta"
+public_folder: "/proyecto-dta/assets/catalogo_dta"
+
+collections:
+  - name: "catalogo"
+    label: "Catálogo"
+    files:
+      - name: "catalogo"
+        label: "Catálogo DTA"
+        file: "content/catalogo.json"
+        fields:
+          - label: "Categorías"
+            name: "categorias"
+            widget: "list"
+            summary: "{{fields.nombre}}"
+            fields:
+              - { label: "ID", name: "id", widget: "string", hint: "dama-planas, dama-altas, altas-cruzadas o caballero" }
+              - { label: "Nombre", name: "nombre", widget: "string" }
+              - { label: "Tallas", name: "tallas", widget: "string" }
+              - { label: "Precio Detal", name: "precioDetal", widget: "number", value_type: "int" }
+              - { label: "Precio Mayor", name: "precioMayor", widget: "number", value_type: "int" }
+              - { label: "Descripción", name: "descripcion", widget: "text", required: false }
+              - label: "Fotos"
+                name: "fotos"
+                widget: "list"
+                field: { label: "Archivo", name: "archivo", widget: "string", hint: "ej: planas1.jpg" }

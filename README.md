@@ -65,3 +65,28 @@ En GitHub: **Settings → Pages → Source: `main` / `(root)`**. El `index.html`
 ✅ Catálogo visual por categoría · ✅ Galería/carrusel destacado · ✅ WhatsApp flotante · ✅ Compartir catálogo (share nativo o QR) · ✅ Guardar contacto (.vcf) · ✅ Código QR · ✅ Iconos de redes sociales (enlaza tus perfiles en `index.html`, sección `.hero-social`) · ✅ Instalable como PWA (manifest + service worker) · ✅ Diseño responsive.
 
 **Pendiente para activar 100% la PWA:** los íconos del manifest están apuntando al logo actual; cuando tengas un logo definitivo en alta resolución (512×512 mínimo, fondo sólido), reemplázalo en `assets/logo/dta-logo.png`.
+
+---
+
+## 🖥️ Panel CMS (editar sin código)
+
+El catálogo ya no está en el JavaScript: ahora se lee de **content/catalogo.json**.
+Para que el cliente edite precios/tallas/fotos sin tocar código, hay dos opciones:
+
+### Opción A — Pages CMS (la más rápida, sin OAuth) ⭐
+1. Entra a https://app.pagescms.org y entra con GitHub.
+2. Conecta el repositorio konfiozinc/proyecto-dta.
+3. Crea una colección tipo "File" apuntando a content/catalogo.json con los campos: id, nombre, tallas, precioDetal, precioMayor, descripcion, fotos (lista).
+4. Comparte el enlace con el cliente: edita → guarda → GitHub Pages se actualiza en ~1 min.
+
+### Opción B — Decap CMS (panel dentro del sitio, requiere OAuth una vez)
+Ya está creado el panel en **/admin/** (dmin/index.html + dmin/config.yml).
+Para activarlo necesitas (paso manual, no se puede automatizar desde aquí):
+1. GitHub → Settings → Developer settings → OAuth Apps → **New OAuth App**:
+   - Homepage URL: https://konfiozinc.github.io/proyecto-dta/
+   - Authorization callback URL: la de tu proveedor OAuth (Netlify/Vercel).
+2. Aloja el proveedor OAuth (ej. decap-cms-oauth-provider en Netlify) y copia su URL.
+3. Pega esa URL en dmin/config.yml → ackend.base_url.
+4. Abre https://konfiozinc.github.io/proyecto-dta/admin/ → "Iniciar sesión con GitHub".
+
+> Mientras no se configure el OAuth, el sitio funciona normalmente leyendo content/catalogo.json.
