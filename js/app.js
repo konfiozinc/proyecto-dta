@@ -72,7 +72,6 @@ async function cargarProductos(){
 }
 function render(){
   buildCategorias();
-  buildPrecios();
 }
 
 const fmt = n => "$" + n.toLocaleString("es-CO");
@@ -80,9 +79,8 @@ const fmt = n => "$" + n.toLocaleString("es-CO");
 function waLink(texto){
   return `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(texto)}`;
 }
-function waLinkProducto(categoriaNombre, archivo){
-  const ref = archivo ? String(archivo).split('/').pop() : '';
-  return waLink(`Hola, estoy interesado(a) en: ${categoriaNombre}${ref ? ' (ref. ' + ref + ')' : ''}. ¿Me confirmas disponibilidad?`);
+function waLinkProducto(categoriaNombre){
+  return waLink(`Hola, quiero info de ${categoriaNombre}.`);
 }
 function imgPath(catId, archivo){
   if (!archivo) return '';
@@ -109,34 +107,33 @@ linksGlobales.forEach(([id, texto]) => {
 const categoriasGrid = document.getElementById("categoriasGrid");
 
 function buildCategorias(){
-  categoriasGrid.innerHTML = categorias.map(cat => `
+  categoriasGrid.innerHTML = categorias.map(cat => {
+    const badge = cat.fotos.length > 4 ? 'Ver más fotos' : cat.fotos.length + ' foto' + (cat.fotos.length !== 1 ? 's' : '');
+    return `
     <div class="categoria-card" data-cat="${cat.id}">
       <div class="img-wrap">
         <img src="${imgPath(cat.id, cat.fotos[0])}" alt="${cat.nombre}" loading="lazy" decoding="async" onerror="${imgOnError()}">
-        <span class="badge-count">${cat.fotos.length} fotos</span>
+        <span class="badge-count">${badge}</span>
       </div>
       <div class="info">
         <h3>${cat.nombre}</h3>
         <div class="tallas">Tallas ${cat.tallas.replace(/^\S+\s/, '')}</div>
-        <div class="precios-mini">Detal <b>${fmt(cat.precioDetal)}</b> · Mayor <b>${fmt(cat.precioMayor)}</b></div>
-        <button class="btn-ver">Ver galería</button>
+        <div class="precios-mini">Mayor <b>${fmt(cat.precioMayor)}</b> · Detal <b>${fmt(cat.precioDetal)}</b></div>
+        <div class="card-acciones">
+          <button class="btn-ver" data-accion="ver">Ver más</button>
+          <a class="btn-wa-card" data-accion="wa" href="${waLinkProducto(cat.nombre)}" target="_blank" rel="noopener">WhatsApp</a>
+        </div>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   categoriasGrid.querySelectorAll(".categoria-card").forEach(card => {
-    card.addEventListener("click", () => openCarousel(card.dataset.cat));
+    card.addEventListener("click", (e) => {
+      if (e.target.closest('[data-accion="wa"]')) return;
+      openCarousel(card.dataset.cat);
+    });
   });
-}
-
-/* ---------- Tablas de precios ---------- */
-function buildPrecios(){
-  document.getElementById("listaDetal").innerHTML = categorias.map(c =>
-    `<li>${c.nombre} <b>${fmt(c.precioDetal)}</b></li>`
-  ).join("");
-  document.getElementById("listaMayor").innerHTML = categorias.map(c =>
-    `<li>${c.nombre} <b>${fmt(c.precioMayor)}</b></li>`
-  ).join("");
 }
 
 /* ---------- Modal Carrusel de categoría ---------- */
@@ -169,7 +166,7 @@ function renderCarouselImg(){
   const archivo = catActual.fotos[indiceActual];
   carouselImgWrap.innerHTML = `<img src="${imgPath(catActual.id, archivo)}" alt="${catActual.nombre}" loading="lazy" decoding="async" onerror="${imgOnError()}">`;
   carouselDotsModal.querySelectorAll("span").forEach((d, i) => d.classList.toggle("active", i === indiceActual));
-  carouselWhatsapp.href = waLinkProducto(catActual.nombre, archivo);
+  carouselWhatsapp.href = waLinkProducto(catActual.nombre);
 }
 
 carouselPrev.addEventListener("click", () => {
@@ -180,6 +177,17 @@ carouselNext.addEventListener("click", () => {
   indiceActual = (indiceActual + 1) % catActual.fotos.length;
   renderCarouselImg();
 });
+
+/* Swipe táctil en el carrusel */
+let carouselTouchX = 0;
+const carouselStage = document.querySelector(".carousel-stage");
+if (carouselStage) {
+  carouselStage.addEventListener("touchstart", (e) => { carouselTouchX = e.touches[0].clientX; }, { passive: true });
+  carouselStage.addEventListener("touchend", (e) => {
+    const dx = carouselTouchX - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 40) { dx > 0 ? carouselNext.click() : carouselPrev.click(); }
+  }, { passive: true });
+}
 
 /* ---------- Modal QR / Compartir ---------- */
 const qrOverlay = document.getElementById("qrOverlay");
@@ -226,6 +234,9 @@ document.querySelectorAll("[data-close]").forEach(btn => {
 });
 [qrOverlay, installOverlay, carouselOverlay].forEach(ov => {
   ov.addEventListener("click", e => { if(e.target === ov) closeModal(ov); });
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(qrOverlay); closeModal(installOverlay); closeModal(carouselOverlay); }
 });
 
 /* vCard dinámica */
