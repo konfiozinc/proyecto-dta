@@ -19,14 +19,60 @@ const CATALOGO_DEFAULT = {
 
 let categorias = CATALOGO_DEFAULT.categorias;
 
-async function cargarProductos(){
+/* ── Firebase (compat) — fuente de datos en vivo ── */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDHWE3OJMspi_z0CKPv8mjvjI7igum98rs",
+  authDomain: "el-titi-menu.firebaseapp.com",
+  databaseURL: "https://el-titi-menu-default-rtdb.firebaseio.com",
+  projectId: "el-titi-menu",
+  storageBucket: "el-titi-menu.firebasestorage.app",
+  messagingSenderId: "903648110789",
+  appId: "1:903648110789:web:6ac58748862dfeb5a568ac"
+};
+let fbDB = null;
+function initFirebase(){
   try {
-    const r = await fetch("content/catalogo.json", { cache: "no-store" });
-    if (r.ok) {
-      const d = await r.json();
-      if (d && Array.isArray(d.categorias) && d.categorias.length) categorias = d.categorias;
+    if (typeof firebase === 'undefined') return;
+    if (firebase.apps.length === 0) firebase.initializeApp(FIREBASE_CONFIG);
+    fbDB = firebase.database();
+  } catch (e) { fbDB = null; }
+}
+function fbToCategorias(obj){
+  if (!obj || typeof obj !== 'object') return [];
+  return Object.keys(obj).filter(k => obj[k]).map(k => ({ id: k, ...obj[k] }));
+}
+
+async function cargarProductos(){
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = (fn) => { if (!settled) { settled = true; fn(); resolve(); } };
+    const local = async () => {
+      try {
+        const r = await fetch("content/catalogo.json", { cache: "no-store" });
+        if (r.ok) {
+          const d = await r.json();
+          if (d && Array.isArray(d.categorias) && d.categorias.length) categorias = d.categorias;
+        }
+      } catch (e) { /* usar datos por defecto */ }
+      finish(render);
+    };
+    if (fbDB) {
+      fbDB.ref('dta-chanclas/productos').on('value', snap => {
+        const lista = fbToCategorias(snap.val());
+        if (lista.length) {
+          categorias = JSON.parse(JSON.stringify(lista));
+          finish(render);
+        }
+      }, () => finish(local));
+      setTimeout(() => { if (!settled) finish(local); }, 5000);
+    } else {
+      finish(local);
     }
-  } catch (e) { /* usar datos por defecto */ }
+  });
+}
+function render(){
+  buildCategorias();
+  buildPrecios();
 }
 
 const fmt = n => "$" + n.toLocaleString("es-CO");
@@ -35,9 +81,12 @@ function waLink(texto){
   return `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(texto)}`;
 }
 function waLinkProducto(categoriaNombre, archivo){
-  return waLink(`Hola, estoy interesado(a) en: ${categoriaNombre} (ref. ${archivo}). ¿Me confirmas disponibilidad?`);
+  const ref = archivo ? String(archivo).split('/').pop() : '';
+  return waLink(`Hola, estoy interesado(a) en: ${categoriaNombre}${ref ? ' (ref. ' + ref + ')' : ''}. ¿Me confirmas disponibilidad?`);
 }
 function imgPath(catId, archivo){
+  if (!archivo) return '';
+  if (/^https?:\/\//.test(archivo) || archivo.includes('/')) return archivo;
   return `assets/catalogo_dta/${catId}/${archivo}`;
 }
 function imgOnError(){
@@ -217,7 +266,6 @@ if("serviceWorker" in navigator){
 
 /* ---------- Init ---------- */
 (async function init(){
+  initFirebase();
   await cargarProductos();
-  buildCategorias();
-  buildPrecios();
 })();
